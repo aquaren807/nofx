@@ -40,6 +40,52 @@ type ConfigFile struct {
 	DataKLineTime      string         `json:"data_k_line_time"`
 }
 
+// TraderCustomModelFile 用于读取 trader/config.json 中的自定义模型配置
+type TraderCustomModelFile struct {
+	AIModel         string `json:"ai_model"`
+	CustomAPIURL    string `json:"custom_api_url"`
+	CustomAPIKey    string `json:"custom_api_key"`
+	CustomModelName string `json:"custom_model_name"`
+}
+
+// syncCustomModelToDefault 从 trader/config.json 读取自定义模型并同步为默认模型（default 与 admin 用户）
+func syncCustomModelToDefault(database *config.Database) error {
+	// 文件可选，找不到直接跳过
+	if _, err := os.Stat("trader/config.json"); os.IsNotExist(err) {
+		return nil
+	}
+
+	data, err := os.ReadFile("trader/config.json")
+	if err != nil {
+		return fmt.Errorf("读取 trader/config.json 失败: %w", err)
+	}
+
+	var tf TraderCustomModelFile
+	if err := json.Unmarshal(data, &tf); err != nil {
+		return fmt.Errorf("解析 trader/config.json 失败: %w", err)
+	}
+
+	// 仅当声明为自定义模型且参数完整时才写入
+	if strings.ToLower(tf.AIModel) != "custom" {
+		return nil
+	}
+	if tf.CustomAPIKey == "" || tf.CustomAPIURL == "" || tf.CustomModelName == "" {
+		return nil
+	}
+
+	// 将自定义模型同步为系统默认（default 用户）与管理员（admin 用户）可用模型
+	users := []string{"default", "admin"}
+	for _, uid := range users {
+		if err := database.UpdateAIModel(uid, "custom", true, tf.CustomAPIKey, tf.CustomAPIURL, tf.CustomModelName); err != nil {
+			log.Printf("⚠️  同步自定义模型到用户 %s 失败: %v", uid, err)
+		} else {
+			log.Printf("✓ 已将自定义模型同步为用户 %s 的默认模型: api=%s model=%s", uid, tf.CustomAPIURL, tf.CustomModelName)
+		}
+	}
+
+	return nil
+}
+
 // syncConfigToDatabase 从config.json读取配置并同步到数据库
 func syncConfigToDatabase(database *config.Database) error {
 	// 检查config.json是否存在
@@ -131,6 +177,11 @@ func main() {
 	// 同步config.json到数据库
 	if err := syncConfigToDatabase(database); err != nil {
 		log.Printf("⚠️  同步config.json到数据库失败: %v", err)
+	}
+
+	// 同步 trader/config.json 中的自定义模型到默认模型（可选）
+	if err := syncCustomModelToDefault(database); err != nil {
+		log.Printf("⚠️  同步自定义模型到默认模型失败: %v", err)
 	}
 
 	// 获取系统配置

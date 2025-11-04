@@ -168,22 +168,32 @@ func (client *Client) callOnce(systemPrompt, userPrompt string) (string, error) 
 		log.Printf("   API Key: %s...%s", client.APIKey[:4], client.APIKey[len(client.APIKey)-4:])
 	}
 
-	// 构建 messages 数组
-	messages := []map[string]string{}
+	// 构建 messages 数组（兼容Doubao图片+文本模式）
+	var messages []map[string]interface{}
 
 	// 如果有 system prompt，添加 system message
 	if systemPrompt != "" {
-		messages = append(messages, map[string]string{
+		messages = append(messages, map[string]interface{}{
 			"role":    "system",
 			"content": systemPrompt,
 		})
 	}
 
-	// 添加 user message
-	messages = append(messages, map[string]string{
-		"role":    "user",
-		"content": userPrompt,
-	})
+	// 默认兼容原始：userPrompt纯文本
+	userMsg := map[string]interface{}{
+		"role": "user",
+	}
+	// 自动识别 userPrompt 是否为Doubao格式（JSON）
+	// 约定：若 userPrompt 能被解析为 []interface{} 或 map[string]interface{} 并包含 image_url 则直接拼内容
+	var parsedContent interface{}
+	if err := json.Unmarshal([]byte(userPrompt), &parsedContent); err == nil {
+		// 解析成功，且内容为 Doubao兼容格式
+		userMsg["content"] = parsedContent
+	} else {
+		// 普通文本
+		userMsg["content"] = userPrompt
+	}
+	messages = append(messages, userMsg)
 
 	// 构建请求体
 	requestBody := map[string]interface{}{
