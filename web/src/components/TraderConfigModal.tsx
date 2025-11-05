@@ -71,7 +71,13 @@ export function TraderConfigModal({
 
   useEffect(() => {
     if (traderData) {
-      setFormData(traderData);
+      // 确保字段映射正确，特别是 ai_model 和 system_prompt_template
+      const mappedData = {
+        ...traderData,
+        ai_model: traderData.ai_model || '',
+        system_prompt_template: traderData.system_prompt_template || 'default',
+      };
+      setFormData(mappedData);
       // 设置已选择的币种
       if (traderData.trading_symbols) {
         const coins = traderData.trading_symbols.split(',').map(s => s.trim()).filter(s => s);
@@ -94,13 +100,6 @@ export function TraderConfigModal({
         initial_balance: 1000,
         scan_interval_minutes: 3,
       });
-    }
-    // 确保旧数据也有默认的 system_prompt_template
-    if (traderData && !traderData.system_prompt_template) {
-      setFormData(prev => ({
-        ...prev,
-        system_prompt_template: 'default'
-      }));
     }
   }, [traderData, isEditMode, availableModels, availableExchanges]);
 
@@ -457,13 +456,19 @@ export function TraderConfigModal({
                   onChange={(e) => handleInputChange('system_prompt_template', e.target.value)}
                   className="w-full px-3 py-2 bg-[#0B0E11] border border-[#2B3139] rounded text-[#EAECEF] focus:border-[#F0B90B] focus:outline-none"
                 >
-                  {promptTemplates.map(template => (
-                    <option key={template.name} value={template.name}>
-                      {template.name === 'default' ? 'Default (默认稳健)' :
-                       template.name === 'aggressive' ? 'Aggressive (激进)' :
-                       template.name.charAt(0).toUpperCase() + template.name.slice(1)}
-                    </option>
-                  ))}
+                  {promptTemplates.map(template => {
+                    const displayName = 
+                      template.name === 'default' ? 'Default (默认稳健)' :
+                      template.name === 'adaptive' ? 'Adaptive (自适应严格)' :
+                      template.name === 'taro_long_prompts' ? 'Taro Long (多周期分析)' :
+                      template.name === 'nof1' ? 'NOF1 (Hyperliquid)' :
+                      template.name.charAt(0).toUpperCase() + template.name.slice(1).replace(/_/g, ' ');
+                    return (
+                      <option key={template.name} value={template.name}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
                 </select>
                 <p className="text-xs text-[#848E9C] mt-1">
                   选择预设的交易策略模板（包含交易哲学、风控原则等）
