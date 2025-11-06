@@ -468,3 +468,5 @@
 [GIN] 2025/11/06 - 23:18:28 | 200 |  108.816595ms |             ::1 | GET      "/api/positions?trader_id=binance_admin_custom_1762276607"
 2025/11/06 23:18:28 ✓ 返回账户信息 [01]: 净值=358.77, 可用=36.03, 盈亏=58.77 (19.59%)
 [GIN] 2025/11/06 - 23:18:28 | 200 |   179.74514ms |             ::1 | GET      "/api/account?trader_id=binance_admin_custom_1762276607"
+[GIN] 2025/11/06 - 23:19:04 | 200 |     454.318µs |             ::1 | GET      "/api/my-traders"
+[GIN] 2025/11/06 - 23:19:07 | 200 |     354.722µs |             ::1 | GET      "/api/my-traders"
