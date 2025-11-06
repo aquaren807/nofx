@@ -16,16 +16,16 @@ func Get(symbol string) (*Data, error) {
 	var err error
 	// 标准化symbol
 	symbol = Normalize(symbol)
-	// 获取3分钟K线数据 (最近10个)
-	klines3m, err = WSMonitorCli.GetCurrentKlines(symbol, "3m") // 多获取一些用于计算
+	// 获取15分钟K线数据 (最近10个)
+	klines3m, err = WSMonitorCli.GetCurrentKlines(symbol, "15m") // 多获取一些用于计算
 	if err != nil {
-		return nil, fmt.Errorf("获取3分钟K线失败: %v", err)
+		return nil, fmt.Errorf("获取15分钟K线失败: %v", err)
 	}
 
-	// 获取4小时K线数据 (最近10个)
-	klines4h, err = WSMonitorCli.GetCurrentKlines(symbol, "4h") // 多获取用于计算指标
+	// 获取1小时K线数据 (最近10个)
+	klines4h, err = WSMonitorCli.GetCurrentKlines(symbol, "1h") // 多获取用于计算指标
 	if err != nil {
-		return nil, fmt.Errorf("获取4小时K线失败: %v", err)
+		return nil, fmt.Errorf("获取1小时K线失败: %v", err)
 	}
 
 	// 计算当前指标 (基于3分钟最新数据)
@@ -35,16 +35,16 @@ func Get(symbol string) (*Data, error) {
 	currentRSI7 := calculateRSI(klines3m, 7)
 
 	// 计算价格变化百分比
-	// 1小时价格变化 = 20个3分钟K线前的价格
+	// 1小时价格变化 = 4 个 15 分钟K线前的价格
 	priceChange1h := 0.0
-	if len(klines3m) >= 21 { // 至少需要21根K线 (当前 + 20根前)
-		price1hAgo := klines3m[len(klines3m)-21].Close
+	if len(klines3m) >= 5 { // 至少需要5根K线 (当前 + 4根前)
+		price1hAgo := klines3m[len(klines3m)-5].Close
 		if price1hAgo > 0 {
 			priceChange1h = ((currentPrice - price1hAgo) / price1hAgo) * 100
 		}
 	}
 
-	// 4小时价格变化 = 1个4小时K线前的价格
+	// 1小时价格变化（长周期）= 1个1小时K线前的价格
 	priceChange4h := 0.0
 	if len(klines4h) >= 2 {
 		price4hAgo := klines4h[len(klines4h)-2].Close
@@ -63,10 +63,10 @@ func Get(symbol string) (*Data, error) {
 	// 获取Funding Rate
 	fundingRate, _ := getFundingRate(symbol)
 
-	// 计算日内系列数据
+	// 计算日内系列数据（15m）
 	intradayData := calculateIntradaySeries(klines3m)
 
-	// 计算长期数据
+	// 计算长期数据（1h）
 	longerTermData := calculateLongerTermData(klines4h)
 
 	return &Data{
@@ -373,7 +373,7 @@ func Format(data *Data) string {
 	sb.WriteString(fmt.Sprintf("Funding Rate: %.2e\n\n", data.FundingRate))
 
 	if data.IntradaySeries != nil {
-		sb.WriteString("Intraday series (3‑minute intervals, oldest → latest):\n\n")
+		sb.WriteString("Intraday series (15‑minute intervals, oldest → latest):\n\n")
 
 		if len(data.IntradaySeries.MidPrices) > 0 {
 			sb.WriteString(fmt.Sprintf("Mid prices: %s\n\n", formatFloatSlice(data.IntradaySeries.MidPrices)))
@@ -397,7 +397,7 @@ func Format(data *Data) string {
 	}
 
 	if data.LongerTermContext != nil {
-		sb.WriteString("Longer‑term context (4‑hour timeframe):\n\n")
+		sb.WriteString("Longer‑term context (1‑hour timeframe):\n\n")
 
 		sb.WriteString(fmt.Sprintf("20‑Period EMA: %.3f vs. 50‑Period EMA: %.3f\n\n",
 			data.LongerTermContext.EMA20, data.LongerTermContext.EMA50))
