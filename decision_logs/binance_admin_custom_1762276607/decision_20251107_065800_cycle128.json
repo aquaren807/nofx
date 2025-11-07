@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-11-07T06:58:00.618858759+08:00",
+  "cycle_number": 128,
+  "system_prompt": "",
+  "input_prompt": "",
+  "cot_trace": "### 思维链分析\n1. **夏普比率评估**：当前夏普-0.09（轻微亏损），需严格筛选信心度\u003e80的交易，控制频率。\n2. **币种筛选**：\n   - BNBUSDT：15分钟级别价格持续高于EMA20（948.63），MACD连续正数且呈上升趋势（从1.297到2.111），RSI7（63.765）中性偏多，价格序列逐步抬升（945.32→953.05），多维度信号一致。\n   - 其他币种（BTC/ETH/SOL/DOGE/HYPE）或趋势矛盾、或信号微弱，未达高信心标准。\n3. **风险回报计算**：\n   - 止损设为EMA20下方（948.47），风险约4.58 U；止盈看3倍15分钟ATR（≈4.53）目标966.59，收益约13.54 U，风险回报比≈1:3，满足硬约束。\n4. **信心验证**：价格、EMA、MACD、RSI多维度一致，信心度85。\n\n\n```json",
+  "decision_json": "[\n  {\n    \"symbol\": \"BNBUSDT\",\n    \"action\": \"open_long\",\n    \"leverage\": 5,\n    \"position_size_usd\": 2000,\n    \"stop_loss\": 948.47,\n    \"take_profit\": 966.59,\n    \"confidence\": 85,\n    \"risk_usd\": 9.6,\n    \"reasoning\": \"15分钟上升趋势+EMA20支撑+MACD持续正数+RSI中性偏多\"\n  }\n]",
+  "account_state": {
+    "total_balance": 359.49268125,
+    "available_balance": 359.49268125,
+    "total_unrealized_profit": 59.492681249999976,
+    "position_count": 0,
+    "margin_used_pct": 0
+  },
+  "positions": null,
+  "candidate_coins": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "DOGEUSDT",
+    "HYPEUSDT"
+  ],
+  "decisions": null,
+  "execution_log": [],
+  "success": false,
+  "error_message": "获取AI决策失败: 解析AI响应失败: 决策验证失败: 决策 #1 验证失败: 杠杆必须在1-3之间（BNBUSDT，当前配置上限3倍）: 5"
+}
