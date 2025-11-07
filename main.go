@@ -25,19 +25,20 @@ type LeverageConfig struct {
 
 // ConfigFile 配置文件结构，只包含需要同步到数据库的字段
 type ConfigFile struct {
-	AdminMode          bool           `json:"admin_mode"`
-	BetaMode           bool           `json:"beta_mode"`
-	APIServerPort      int            `json:"api_server_port"`
-	UseDefaultCoins    bool           `json:"use_default_coins"`
-	DefaultCoins       []string       `json:"default_coins"`
-	CoinPoolAPIURL     string         `json:"coin_pool_api_url"`
-	OITopAPIURL        string         `json:"oi_top_api_url"`
-	MaxDailyLoss       float64        `json:"max_daily_loss"`
-	MaxDrawdown        float64        `json:"max_drawdown"`
-	StopTradingMinutes int            `json:"stop_trading_minutes"`
-	Leverage           LeverageConfig `json:"leverage"`
-	JWTSecret          string         `json:"jwt_secret"`
-	DataKLineTime      string         `json:"data_k_line_time"`
+	AdminMode          bool                  `json:"admin_mode"`
+	BetaMode           bool                  `json:"beta_mode"`
+	APIServerPort      int                   `json:"api_server_port"`
+	UseDefaultCoins    bool                  `json:"use_default_coins"`
+	DefaultCoins       []string              `json:"default_coins"`
+	CoinPoolAPIURL     string                `json:"coin_pool_api_url"`
+	OITopAPIURL        string                `json:"oi_top_api_url"`
+	MaxDailyLoss       float64               `json:"max_daily_loss"`
+	MaxDrawdown        float64               `json:"max_drawdown"`
+	StopTradingMinutes int                   `json:"stop_trading_minutes"`
+	Leverage           LeverageConfig        `json:"leverage"`
+	JWTSecret          string                `json:"jwt_secret"`
+	DataKLineTime      string                `json:"data_k_line_time"`
+	CustomAIModel      TraderCustomModelFile `json:"custom_ai_model"`
 }
 
 // TraderCustomModelFile 用于读取 trader/config.json 中的自定义模型配置
@@ -49,6 +50,7 @@ type TraderCustomModelFile struct {
 }
 
 // syncCustomModelToDefault 从 trader/config.json 读取自定义模型并同步为默认模型（default 与 admin 用户）
+// 这是一个后备函数，仅在 config.json 中未配置 custom_ai_model 时才使用
 func syncCustomModelToDefault(database *config.Database) error {
 	// 文件可选，找不到直接跳过
 	if _, err := os.Stat("trader/config.json"); os.IsNotExist(err) {
@@ -79,7 +81,7 @@ func syncCustomModelToDefault(database *config.Database) error {
 		if err := database.UpdateAIModel(uid, "custom", true, tf.CustomAPIKey, tf.CustomAPIURL, tf.CustomModelName); err != nil {
 			log.Printf("⚠️  同步自定义模型到用户 %s 失败: %v", uid, err)
 		} else {
-			log.Printf("✓ 已将自定义模型同步为用户 %s 的默认模型: api=%s model=%s", uid, tf.CustomAPIURL, tf.CustomModelName)
+			log.Printf("✓ 已将自定义模型同步为用户 %s 的默认模型（来自 trader/config.json）: api=%s model=%s", uid, tf.CustomAPIURL, tf.CustomModelName)
 		}
 	}
 
@@ -148,6 +150,21 @@ func syncConfigToDatabase(database *config.Database) error {
 			log.Printf("⚠️  更新配置 %s 失败: %v", key, err)
 		} else {
 			log.Printf("✓ 同步配置: %s = %s", key, value)
+		}
+	}
+
+	// 同步custom_ai_model到数据库（若存在）
+	if configFile.CustomAIModel.AIModel != "" || configFile.CustomAIModel.CustomAPIURL != "" {
+		if configFile.CustomAIModel.CustomAPIKey != "" && configFile.CustomAIModel.CustomAPIURL != "" && configFile.CustomAIModel.CustomModelName != "" {
+			// 将自定义模型同步为系统默认（default 用户）与管理员（admin 用户）可用模型
+			users := []string{"default", "admin"}
+			for _, uid := range users {
+				if err := database.UpdateAIModel(uid, "custom", true, configFile.CustomAIModel.CustomAPIKey, configFile.CustomAIModel.CustomAPIURL, configFile.CustomAIModel.CustomModelName); err != nil {
+					log.Printf("⚠️  同步自定义模型到用户 %s 失败: %v", uid, err)
+				} else {
+					log.Printf("✓ 已将自定义模型同步为用户 %s 的默认模型: api=%s model=%s", uid, configFile.CustomAIModel.CustomAPIURL, configFile.CustomAIModel.CustomModelName)
+				}
+			}
 		}
 	}
 
