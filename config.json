@@ -20,5 +20,13 @@
   "max_daily_loss": 10.0,
   "max_drawdown": 20.0,
   "stop_trading_minutes": 60,
-  "jwt_secret": "Qk0kAa+d0iIEzXVHXbNbm+UaN3RNabmWtH8rDWZ5OPf+4GX8pBflAHodfpbipVMyrw1fsDanHsNBjhgbDeK9Jg=="
+  "jwt_secret": "Qk0kAa+d0iIEzXVHXbNbm+UaN3RNabmWtH8rDWZ5OPf+4GX8pBflAHodfpbipVMyrw1fsDanHsNBjhgbDeK9Jg==",
+  "custom_ai_model": {
+    "id": "ark-trader-demo",
+    "name": "Ark Doubao Trader",
+    "ai_model": "custom",
+    "custom_api_url": "https://ark.cn-beijing.volces.com/api/v3",
+    "custom_api_key": "b1d26f00-3901-40ae-a4f3-c978f18f6c5d",
+    "custom_model_name": "doubao-seed-1-6-thinking-250715"
+  }
 }
