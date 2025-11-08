@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-11-08T12:03:41.904895922+08:00",
+  "cycle_number": 19,
+  "system_prompt": "",
+  "input_prompt": "",
+  "cot_trace": "",
+  "decision_json": "",
+  "account_state": {
+    "total_balance": 339.55496857,
+    "available_balance": 33.27782438,
+    "total_unrealized_profit": -60.44503142999997,
+    "position_count": 2,
+    "margin_used_pct": 90.55215296231938
+  },
+  "positions": [
+    {
+      "symbol": "ETHUSDT",
+      "side": "long",
+      "position_amt": 0.199,
+      "entry_price": 3465.05,
+      "mark_price": 3460.36574419,
+      "unrealized_profit": -0.9321669,
+      "leverage": 5,
+      "liquidation_price": 2784.91217372
+    },
+    {
+      "symbol": "BNBUSDT",
+      "side": "long",
+      "position_amt": 0.51,
+      "entry_price": 998.21,
+      "mark_price": 998.53987007,
+      "unrealized_profit": 0.16823373,
+      "leverage": 3,
+      "liquidation_price": 669.24867506
+    }
+  ],
+  "candidate_coins": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "DOGEUSDT",
+    "HYPEUSDT"
+  ],
+  "decisions": null,
+  "execution_log": [],
+  "success": false,
+  "error_message": "获取AI决策失败: 调用AI API失败: API返回错误 (status 403): {\"error\":{\"code\":\"AccountOverdueError\",\"message\":\"The request failed because your account has an overdue balance. Request id: 0217625746217786d201c9b369c26bba9074d9a1e476adf2cee89\",\"param\":\"\",\"type\":\"Forbidden\"}}"
+}
