@@ -16,16 +16,16 @@ func Get(symbol string) (*Data, error) {
 	var err error
 	// 标准化symbol
 	symbol = Normalize(symbol)
-	// 获取15分钟K线数据 (最近10个)
-	klines3m, err = WSMonitorCli.GetCurrentKlines(symbol, "15m") // 多获取一些用于计算
+	// 获取3分钟K线数据 (最近10个)
+	klines3m, err = WSMonitorCli.GetCurrentKlines(symbol, "3m") // 多获取一些用于计算
 	if err != nil {
-		return nil, fmt.Errorf("获取15分钟K线失败: %v", err)
+		return nil, fmt.Errorf("获取3分钟K线失败: %v", err)
 	}
 
-	// 获取1小时K线数据 (最近10个)
-	klines4h, err = WSMonitorCli.GetCurrentKlines(symbol, "1h") // 多获取用于计算指标
+	// 获取4小时K线数据 (最近10个)
+	klines4h, err = WSMonitorCli.GetCurrentKlines(symbol, "4h") // 多获取用于计算指标
 	if err != nil {
-		return nil, fmt.Errorf("获取1小时K线失败: %v", err)
+		return nil, fmt.Errorf("获取4小时K线失败: %v", err)
 	}
 
 	// 计算当前指标 (基于3分钟最新数据)
@@ -35,16 +35,16 @@ func Get(symbol string) (*Data, error) {
 	currentRSI7 := calculateRSI(klines3m, 7)
 
 	// 计算价格变化百分比
-	// 1小时价格变化 = 4 个 15 分钟K线前的价格
+	// 1小时价格变化 = 20个3分钟K线前的价格
 	priceChange1h := 0.0
-	if len(klines3m) >= 5 { // 至少需要5根K线 (当前 + 4根前)
-		price1hAgo := klines3m[len(klines3m)-5].Close
+	if len(klines3m) >= 21 { // 至少需要21根K线 (当前 + 20根前)
+		price1hAgo := klines3m[len(klines3m)-21].Close
 		if price1hAgo > 0 {
 			priceChange1h = ((currentPrice - price1hAgo) / price1hAgo) * 100
 		}
 	}
 
-	// 1小时价格变化（长周期）= 1个1小时K线前的价格
+	// 4小时价格变化 = 1个4小时K线前的价格
 	priceChange4h := 0.0
 	if len(klines4h) >= 2 {
 		price4hAgo := klines4h[len(klines4h)-2].Close
@@ -63,10 +63,10 @@ func Get(symbol string) (*Data, error) {
 	// 获取Funding Rate
 	fundingRate, _ := getFundingRate(symbol)
 
-	// 计算日内系列数据（15m）
+	// 计算日内系列数据
 	intradayData := calculateIntradaySeries(klines3m)
 
-	// 计算长期数据（1h）
+	// 计算长期数据
 	longerTermData := calculateLongerTermData(klines4h)
 
 	return &Data{
@@ -359,21 +359,26 @@ func getFundingRate(symbol string) (float64, error) {
 func Format(data *Data) string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("current_price = %.2f, current_ema20 = %.3f, current_macd = %.3f, current_rsi (7 period) = %.3f\n\n",
-		data.CurrentPrice, data.CurrentEMA20, data.CurrentMACD, data.CurrentRSI7))
+	// 使用动态精度格式化价格
+	priceStr := formatPriceWithDynamicPrecision(data.CurrentPrice)
+	sb.WriteString(fmt.Sprintf("current_price = %s, current_ema20 = %.3f, current_macd = %.3f, current_rsi (7 period) = %.3f\n\n",
+		priceStr, data.CurrentEMA20, data.CurrentMACD, data.CurrentRSI7))
 
 	sb.WriteString(fmt.Sprintf("In addition, here is the latest %s open interest and funding rate for perps:\n\n",
 		data.Symbol))
 
 	if data.OpenInterest != nil {
-		sb.WriteString(fmt.Sprintf("Open Interest: Latest: %.2f Average: %.2f\n\n",
-			data.OpenInterest.Latest, data.OpenInterest.Average))
+		// 使用动态精度格式化 OI 数据
+		oiLatestStr := formatPriceWithDynamicPrecision(data.OpenInterest.Latest)
+		oiAverageStr := formatPriceWithDynamicPrecision(data.OpenInterest.Average)
+		sb.WriteString(fmt.Sprintf("Open Interest: Latest: %s Average: %s\n\n",
+			oiLatestStr, oiAverageStr))
 	}
 
 	sb.WriteString(fmt.Sprintf("Funding Rate: %.2e\n\n", data.FundingRate))
 
 	if data.IntradaySeries != nil {
-		sb.WriteString("Intraday series (15‑minute intervals, oldest → latest):\n\n")
+		sb.WriteString("Intraday series (3‑minute intervals, oldest → latest):\n\n")
 
 		if len(data.IntradaySeries.MidPrices) > 0 {
 			sb.WriteString(fmt.Sprintf("Mid prices: %s\n\n", formatFloatSlice(data.IntradaySeries.MidPrices)))
@@ -397,7 +402,7 @@ func Format(data *Data) string {
 	}
 
 	if data.LongerTermContext != nil {
-		sb.WriteString("Longer‑term context (1‑hour timeframe):\n\n")
+		sb.WriteString("Longer‑term context (4‑hour timeframe):\n\n")
 
 		sb.WriteString(fmt.Sprintf("20‑Period EMA: %.3f vs. 50‑Period EMA: %.3f\n\n",
 			data.LongerTermContext.EMA20, data.LongerTermContext.EMA50))
@@ -420,11 +425,42 @@ func Format(data *Data) string {
 	return sb.String()
 }
 
-// formatFloatSlice 格式化float64切片为字符串
+// formatPriceWithDynamicPrecision 根据价格区间动态选择精度
+// 这样可以完美支持从超低价 meme coin (< 0.0001) 到 BTC/ETH 的所有币种
+func formatPriceWithDynamicPrecision(price float64) string {
+	switch {
+	case price < 0.0001:
+		// 超低价 meme coin: 1000SATS, 1000WHY, DOGS
+		// 0.00002070 → "0.00002070" (8位小数)
+		return fmt.Sprintf("%.8f", price)
+	case price < 0.001:
+		// 低价 meme coin: NEIRO, HMSTR, HOT, NOT
+		// 0.00015060 → "0.000151" (6位小数)
+		return fmt.Sprintf("%.6f", price)
+	case price < 0.01:
+		// 中低价币: PEPE, SHIB, MEME
+		// 0.00556800 → "0.005568" (6位小数)
+		return fmt.Sprintf("%.6f", price)
+	case price < 1.0:
+		// 低价币: ASTER, DOGE, ADA, TRX
+		// 0.9954 → "0.9954" (4位小数)
+		return fmt.Sprintf("%.4f", price)
+	case price < 100:
+		// 中价币: SOL, AVAX, LINK, MATIC
+		// 23.4567 → "23.4567" (4位小数)
+		return fmt.Sprintf("%.4f", price)
+	default:
+		// 高价币: BTC, ETH (节省 Token)
+		// 45678.9123 → "45678.91" (2位小数)
+		return fmt.Sprintf("%.2f", price)
+	}
+}
+
+// formatFloatSlice 格式化float64切片为字符串（使用动态精度）
 func formatFloatSlice(values []float64) string {
 	strValues := make([]string, len(values))
 	for i, v := range values {
-		strValues[i] = fmt.Sprintf("%.3f", v)
+		strValues[i] = formatPriceWithDynamicPrecision(v)
 	}
 	return "[" + strings.Join(strValues, ", ") + "]"
 }
