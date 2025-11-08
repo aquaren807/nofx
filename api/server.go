@@ -824,12 +824,13 @@ func (s *Server) handleTraderList(c *gin.Context) {
 		}
 
 		result = append(result, map[string]interface{}{
-			"trader_id":       trader.ID,
-			"trader_name":     trader.Name,
-			"ai_model":        aiModelID,
-			"exchange_id":     trader.ExchangeID,
-			"is_running":      isRunning,
-			"initial_balance": trader.InitialBalance,
+			"trader_id":             trader.ID,
+			"trader_name":           trader.Name,
+			"ai_model":              aiModelID,
+			"exchange_id":           trader.ExchangeID,
+			"is_running":            isRunning,
+			"initial_balance":       trader.InitialBalance,
+			"scan_interval_minutes": trader.ScanIntervalMinutes,
 		})
 	}
 

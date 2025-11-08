@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-11-08T05:12:34.236005709+08:00",
+  "cycle_number": 96,
+  "system_prompt": "",
+  "input_prompt": "",
+  "cot_trace": "",
+  "decision_json": "",
+  "account_state": {
+    "total_balance": 348.25622124,
+    "available_balance": 156.6962542,
+    "total_unrealized_profit": 48.25622124,
+    "position_count": 2,
+    "margin_used_pct": 54.773299570685175
+  },
+  "positions": [
+    {
+      "symbol": "HYPEUSDT",
+      "side": "long",
+      "position_amt": 6.41,
+      "entry_price": 43.05,
+      "mark_price": 42.947,
+      "unrealized_profit": -0.66023,
+      "leverage": 3,
+      "liquidation_price": 29.01164113
+    },
+    {
+      "symbol": "BNBUSDT",
+      "side": "long",
+      "position_amt": 0.3,
+      "entry_price": 982.21,
+      "mark_price": 989.88,
+      "unrealized_profit": 2.301,
+      "leverage": 3,
+      "liquidation_price": 658.59071873
+    }
+  ],
+  "candidate_coins": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "DOGEUSDT",
+    "HYPEUSDT"
+  ],
+  "decisions": null,
+  "execution_log": [],
+  "success": false,
+  "error_message": "获取AI决策失败: 调用AI API失败: 发送请求失败: Post \"https://ark.cn-beijing.volces.com/api/v3/chat/completions\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)"
+}
